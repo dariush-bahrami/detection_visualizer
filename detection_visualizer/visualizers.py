@@ -25,7 +25,7 @@ def visualize_bounding_box(
     image_height, image_width = image.shape[:2]
     diagonal = (image_height**2 + image_width**2) ** 0.5
     bbox_thickness = int(3e-3 * diagonal)
-    result = image.copy()
+    result = image
     xmin, ymin, xmax, ymax = bounding_box
 
     # Draw Box
@@ -101,10 +101,9 @@ def visualize_object_detection_ground_truth(
     color: Color,
     alpha: float,
 ):
-    result = image.copy()
     box_label = annotation.label
     result = visualize_bounding_box(
-        result,
+        image,
         annotation.bounding_box,
         box_label,
         color,
@@ -119,10 +118,9 @@ def visualize_object_detection_prediction(
     color: Color,
     alpha: float,
 ):
-    result = image.copy()
     box_label = f"{annotation.label} - {annotation.confidence:.2f}"
     result = visualize_bounding_box(
-        result,
+        image,
         annotation.bounding_box,
         box_label,
         color,
@@ -137,8 +135,7 @@ def visualize_segmentation_ground_truth(
     color: Color,
     alpha: float,
 ):
-    result = image.copy()
-    result = visualize_mask(result, annotation.mask, color, alpha)
+    result = visualize_mask(image, annotation.mask, color, alpha)
     box_label = annotation.label
     if annotation.bounding_box is None:
         bbox = get_mask_bbox(annotation.mask)
@@ -161,8 +158,7 @@ def visualize_segmentation_prediction(
     color: Color,
     alpha: float,
 ):
-    result = image.copy()
-    result = visualize_mask(result, annotation.mask, color, alpha)
+    result = visualize_mask(image, annotation.mask, color, alpha)
     box_label = f"{annotation.label} - {annotation.confidence:.2f}"
     if annotation.bounding_box is None:
         bbox = get_mask_bbox(annotation.mask)
@@ -179,6 +175,14 @@ def visualize_segmentation_prediction(
     return result
 
 
+VISUALIZATION_FUNCTIONS = {
+    ObjectDetectionGroundTruth: visualize_object_detection_ground_truth,
+    ObjectDetectionPrediction: visualize_object_detection_prediction,
+    SegmentationGroundTruth: visualize_segmentation_ground_truth,
+    SegmentationPrediction: visualize_segmentation_prediction,
+}
+
+
 def visualize_annotation(
     image: np.ndarray,
     annotation: Union[
@@ -190,32 +194,10 @@ def visualize_annotation(
     color: Color,
     alpha: float,
 ):
-    if isinstance(annotation, ObjectDetectionGroundTruth):
-        result = visualize_object_detection_ground_truth(
-            image,
-            annotation,
-            color,
-            alpha,
-        )
-    elif isinstance(annotation, ObjectDetectionPrediction):
-        result = visualize_object_detection_prediction(
-            image,
-            annotation,
-            color,
-            alpha,
-        )
-    elif isinstance(annotation, SegmentationGroundTruth):
-        result = visualize_segmentation_ground_truth(
-            image,
-            annotation,
-            color,
-            alpha,
-        )
-    elif isinstance(annotation, SegmentationPrediction):
-        result = visualize_segmentation_prediction(
-            image,
-            annotation,
-            color,
-            alpha,
-        )
-    return result
+    visualization_function = VISUALIZATION_FUNCTIONS[type(annotation)]
+    return visualization_function(
+        image,
+        annotation,
+        color,
+        alpha,
+    )

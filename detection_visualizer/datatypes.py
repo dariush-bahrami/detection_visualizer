@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 import numpy as np
 
@@ -18,28 +18,12 @@ class BoundingBox(NamedTuple):
 
 
 @dataclass
-class ObjectDetectionGroundTruth:
+class ObjectDetectionAnnotation:
     label: str
     bounding_box: BoundingBox
 
 
 @dataclass
-class ObjectDetectionPrediction:
-    label: str
-    bounding_box: BoundingBox
-    confidence: float
-
-
-@dataclass
-class SegmentationGroundTruth:
+class SegmentationAnnotation:
     label: str
     mask: np.ndarray
-    bounding_box: Optional[BoundingBox] = None
-
-
-@dataclass
-class SegmentationPrediction:
-    label: str
-    mask: np.ndarray
-    confidence: float
-    bounding_box: Optional[BoundingBox] = None

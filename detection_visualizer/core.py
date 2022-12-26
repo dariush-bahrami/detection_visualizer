@@ -3,13 +3,7 @@ from typing import Sequence, Union
 
 import numpy as np
 
-from .datatypes import (
-    Color,
-    ObjectDetectionGroundTruth,
-    ObjectDetectionPrediction,
-    SegmentationGroundTruth,
-    SegmentationPrediction,
-)
+from .datatypes import Color, ObjectDetectionAnnotation, SegmentationAnnotation
 from .utils import get_adjacent_pretty_color, resize_image_and_annotations
 from .visualizers import visualize_annotation
 
@@ -58,14 +52,7 @@ class Visualizer:
     def __call__(
         self,
         image: np.ndarray,
-        annotations: Sequence[
-            Union[
-                ObjectDetectionGroundTruth,
-                ObjectDetectionPrediction,
-                SegmentationGroundTruth,
-                SegmentationPrediction,
-            ]
-        ],
+        annotations: Sequence[Union[ObjectDetectionAnnotation, SegmentationAnnotation]],
     ):
         image, annotations = resize_image_and_annotations(
             image,

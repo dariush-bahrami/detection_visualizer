@@ -6,10 +6,8 @@ import numpy as np
 from .datatypes import (
     BoundingBox,
     Color,
-    ObjectDetectionGroundTruth,
-    ObjectDetectionPrediction,
-    SegmentationGroundTruth,
-    SegmentationPrediction,
+    ObjectDetectionAnnotation,
+    SegmentationAnnotation,
 )
 from .utils import get_mask_bbox
 
@@ -95,76 +93,31 @@ def visualize_mask(
     )
 
 
-def visualize_object_detection_ground_truth(
+def visualize_object_detection_annotation(
     image: np.ndarray,
-    annotation: ObjectDetectionGroundTruth,
+    annotation: ObjectDetectionAnnotation,
     color: Color,
     alpha: float,
 ):
-    box_label = annotation.label
     result = visualize_bounding_box(
         image,
         annotation.bounding_box,
-        box_label,
+        annotation.label,
         color,
         alpha,
     )
     return result
 
 
-def visualize_object_detection_prediction(
+def visualize_segmentation_annotation(
     image: np.ndarray,
-    annotation: ObjectDetectionPrediction,
-    color: Color,
-    alpha: float,
-):
-    box_label = f"{annotation.label} - {annotation.confidence:.2f}"
-    result = visualize_bounding_box(
-        image,
-        annotation.bounding_box,
-        box_label,
-        color,
-        alpha,
-    )
-    return result
-
-
-def visualize_segmentation_ground_truth(
-    image: np.ndarray,
-    annotation: SegmentationGroundTruth,
+    annotation: SegmentationAnnotation,
     color: Color,
     alpha: float,
 ):
     result = visualize_mask(image, annotation.mask, color, alpha)
     box_label = annotation.label
-    if annotation.bounding_box is None:
-        bbox = get_mask_bbox(annotation.mask)
-    else:
-        bbox = annotation.bounding_box
-
-    result = visualize_bounding_box(
-        result,
-        bbox,
-        box_label,
-        color,
-        alpha,
-    )
-    return result
-
-
-def visualize_segmentation_prediction(
-    image: np.ndarray,
-    annotation: SegmentationPrediction,
-    color: Color,
-    alpha: float,
-):
-    result = visualize_mask(image, annotation.mask, color, alpha)
-    box_label = f"{annotation.label} - {annotation.confidence:.2f}"
-    if annotation.bounding_box is None:
-        bbox = get_mask_bbox(annotation.mask)
-    else:
-        bbox = annotation.bounding_box
-
+    bbox = get_mask_bbox(annotation.mask)
     result = visualize_bounding_box(
         result,
         bbox,
@@ -176,21 +129,14 @@ def visualize_segmentation_prediction(
 
 
 VISUALIZATION_FUNCTIONS = {
-    ObjectDetectionGroundTruth: visualize_object_detection_ground_truth,
-    ObjectDetectionPrediction: visualize_object_detection_prediction,
-    SegmentationGroundTruth: visualize_segmentation_ground_truth,
-    SegmentationPrediction: visualize_segmentation_prediction,
+    ObjectDetectionAnnotation: visualize_object_detection_annotation,
+    SegmentationAnnotation: visualize_segmentation_annotation,
 }
 
 
 def visualize_annotation(
     image: np.ndarray,
-    annotation: Union[
-        ObjectDetectionGroundTruth,
-        ObjectDetectionPrediction,
-        SegmentationGroundTruth,
-        SegmentationPrediction,
-    ],
+    annotation: Union[ObjectDetectionAnnotation, SegmentationAnnotation],
     color: Color,
     alpha: float,
 ):

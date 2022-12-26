@@ -7,10 +7,8 @@ import numpy as np
 from .datatypes import (
     BoundingBox,
     Color,
-    ObjectDetectionGroundTruth,
-    ObjectDetectionPrediction,
-    SegmentationGroundTruth,
-    SegmentationPrediction,
+    ObjectDetectionAnnotation,
+    SegmentationAnnotation,
 )
 
 
@@ -49,14 +47,7 @@ def get_iou(bb1, bb2):
 
 def resize_image_and_annotations(
     image: np.ndarray,
-    annotations: Sequence[
-        Union[
-            ObjectDetectionGroundTruth,
-            ObjectDetectionPrediction,
-            SegmentationGroundTruth,
-            SegmentationPrediction,
-        ]
-    ],
+    annotations: Sequence[Union[ObjectDetectionAnnotation, SegmentationAnnotation]],
     longest_edge_size: int,
     min_size_difference_to_resize: float,
 ):
@@ -67,13 +58,11 @@ def resize_image_and_annotations(
     new_h, new_w = round(h * scale), round(w * scale)
     resized_image = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
     for annotation in annotations:
-        if hasattr(annotation, "bounding_box"):
-            # In case of segmentations, bounding_box can be None
-            if annotation.bounding_box is not None:
-                resized_box_coords = [round(i * scale) for i in annotation.bounding_box]
-                annotation.bounding_box = BoundingBox(*resized_box_coords)
+        if isinstance(annotation, ObjectDetectionAnnotation):
+            resized_box_coords = [round(i * scale) for i in annotation.bounding_box]
+            annotation.bounding_box = BoundingBox(*resized_box_coords)
 
-        if hasattr(annotation, "mask"):
+        elif isinstance(annotation, SegmentationAnnotation):
             annotation.mask = cv2.resize(
                 annotation.mask,
                 (new_w, new_h),

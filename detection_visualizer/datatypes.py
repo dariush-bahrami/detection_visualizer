@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import NamedTuple, Optional
 
 import numpy as np
@@ -16,24 +17,28 @@ class BoundingBox(NamedTuple):
     ymax: int
 
 
-class ObjectDetectionGroundTruth(NamedTuple):
+@dataclass
+class ObjectDetectionGroundTruth:
     label: str
     bounding_box: BoundingBox
 
 
-class ObjectDetectionPrediction(NamedTuple):
+@dataclass
+class ObjectDetectionPrediction:
     label: str
     bounding_box: BoundingBox
     confidence: float
 
 
-class SegmentationGroundTruth(NamedTuple):
+@dataclass
+class SegmentationGroundTruth:
     label: str
     mask: np.ndarray
     bounding_box: Optional[BoundingBox] = None
 
 
-class SegmentationPrediction(NamedTuple):
+@dataclass
+class SegmentationPrediction:
     label: str
     mask: np.ndarray
     confidence: float

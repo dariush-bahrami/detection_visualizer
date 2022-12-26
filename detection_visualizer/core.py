@@ -47,10 +47,12 @@ class Visualizer:
         min_alpha: float = 0.8,
         max_alpha: float = 0.9,
         longest_edge_length: int = 512,
+        min_size_difference_to_resize: float = 0.1,
     ):
         self.min_alpha = min_alpha
         self.max_alpha = max_alpha
         self.longest_edge_length = longest_edge_length
+        self.min_size_difference_to_resize = min_size_difference_to_resize
         self.label_to_color = LabeToColor()
 
     def __call__(
@@ -66,12 +68,14 @@ class Visualizer:
         ],
     ):
         image, annotations = resize_image_and_annotations(
-            image, annotations, self.longest_edge_length
+            image,
+            annotations,
+            self.longest_edge_length,
+            self.min_size_difference_to_resize,
         )
-        result = np.asarray(image).copy()
         alphas = np.linspace(self.max_alpha, self.min_alpha, len(annotations)).tolist()
         for annotation in annotations:
             color = self.label_to_color[annotation.label]
             alpha = alphas.pop()
-            result = visualize_annotation(result, annotation, color, alpha)
-        return result
+            image = visualize_annotation(image, annotation, color, alpha)
+        return image

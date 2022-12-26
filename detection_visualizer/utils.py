@@ -57,21 +57,20 @@ def resize_image_and_annotations(
             SegmentationPrediction,
         ]
     ],
-    longest_edge_size,
-    threshold=0.1,
+    longest_edge_size: int,
+    min_size_difference_to_resize: float,
 ):
     h, w = image.shape[:2]
     scale = longest_edge_size / max(h, w)
-    if abs(scale - 1) < threshold:
+    if abs(scale - 1) < min_size_difference_to_resize:
         return image, annotations
     new_h, new_w = round(h * scale), round(w * scale)
     resized_image = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
-    resized_annotations = []
     for annotation in annotations:
         if hasattr(annotation, "bounding_box"):
             # In case of segmentations, bounding_box can be None
             if annotation.bounding_box is not None:
-                resized_box_coords = [i * scale for i in annotation.bounding_box]
+                resized_box_coords = [round(i * scale) for i in annotation.bounding_box]
                 annotation.bounding_box = BoundingBox(*resized_box_coords)
 
         if hasattr(annotation, "mask"):
@@ -80,4 +79,4 @@ def resize_image_and_annotations(
                 (new_w, new_h),
                 interpolation=cv2.INTER_AREA,
             )
-    return resized_image, resized_annotations
+    return resized_image, annotations

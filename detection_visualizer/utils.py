@@ -1,71 +1,77 @@
+from collections import OrderedDict
 from colorsys import hsv_to_rgb, rgb_to_hsv
-from typing import Sequence, Union
+from typing import MutableMapping
 
 import cv2
 import numpy as np
 
-from .datatypes import (
-    BoundingBox,
-    Color,
-    ObjectDetectionAnnotation,
-    SegmentationAnnotation,
-)
+from .datatypes import AnnotationABC, BoxCoordinates, Color
 
 
-def get_mask_bbox(mask: np.ndarray):
+def get_scale_factor(image_height: int, image_width: int, longest_edge_size: int):
+    scale = longest_edge_size / max(image_height, image_width)
+    return scale
+
+
+def scale_image(image: np.ndarray, scale_factor: float) -> np.ndarray:
+    h, w = image.shape[:2]
+    new_h, new_w = round(h * scale_factor), round(w * scale_factor)
+    image = cv2.resize(
+        image,
+        (new_w, new_h),
+        interpolation=cv2.INTER_AREA,
+    )
+    return image
+
+
+def crop_image(image: np.ndarray, crop_box_coordinates: BoxCoordinates) -> np.ndarray:
+    xmin, ymin, xmax, ymax = crop_box_coordinates
+    return image[ymin:ymax, xmin:xmax]
+
+
+def get_mask_bbox(mask: np.ndarray) -> BoxCoordinates:
     y, x = np.asarray(mask).nonzero()
     xmin, ymin, xmax, ymax = x.min(), y.min(), x.max(), y.max()
-    return tuple(map(int, (xmin, ymin, xmax, ymax)))
-
-
-def invert_color(color: Color):
-    return Color(*[255 - i for i in color])
+    return BoxCoordinates(*[int(i) for i in (xmin, ymin, xmax, ymax)])
 
 
 def get_adjacent_pretty_color(color: Color) -> Color:
-    golden_ratio_conjugate = 0.6180339887498948
+    golden_ratio_conjugate = (5**0.5 - 1) / 2
     h, s, v = rgb_to_hsv(*map(lambda x: x / 255, color))
     h += golden_ratio_conjugate
     h %= 1
     return Color(*map(lambda x: round(x * 255), hsv_to_rgb(h, s, v)))
 
 
-def get_iou(bb1, bb2):
-    x_left = max(bb1[0], bb2[0])
-    y_top = max(bb1[1], bb2[1])
-    x_right = min(bb1[2], bb2[2])
-    y_bottom = min(bb1[3], bb2[3])
-    if x_right < x_left or y_bottom < y_top:
-        return 0.0
-    intersection_area = (x_right - x_left) * (y_bottom - y_top)
-    bb1_area = (bb1[2] - bb1[0]) * (bb1[3] - bb1[1])
-    bb2_area = (bb2[2] - bb2[0]) * (bb2[3] - bb2[1])
+class AutoColorMapper(MutableMapping):
+    def __init__(self, first_color: Color = Color(0, 255, 0)):
+        self.first_color = first_color
+        self.__collection = OrderedDict()
 
-    iou = intersection_area / float(bb1_area + bb2_area - intersection_area)
-    return iou
+    def __getitem__(self, annotation: AnnotationABC) -> Color:
+        if annotation.category in self.__collection:
+            return self.__collection[annotation.category]
+        elif len(self) == 0:
+            self.__collection[annotation.category] = self.first_color
+            return self.first_color
+        else:
+            last_category = next(reversed(self.__collection))
+            last_color = self.__collection[last_category]
+            new_color = get_adjacent_pretty_color(last_color)
+            self.__collection[annotation.category] = new_color
+            return new_color
 
+    def __setitem__(self, annotation: AnnotationABC, color: Color):
+        self.__collection[annotation.category] = color
 
-def resize_image_and_annotations(
-    image: np.ndarray,
-    annotations: Sequence[Union[ObjectDetectionAnnotation, SegmentationAnnotation]],
-    longest_edge_size: int,
-    min_size_difference_to_resize: float,
-):
-    h, w = image.shape[:2]
-    scale = longest_edge_size / max(h, w)
-    if abs(scale - 1) < min_size_difference_to_resize:
-        return image, annotations
-    new_h, new_w = round(h * scale), round(w * scale)
-    resized_image = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
-    for annotation in annotations:
-        if isinstance(annotation, ObjectDetectionAnnotation):
-            resized_box_coords = [round(i * scale) for i in annotation.bounding_box]
-            annotation.bounding_box = BoundingBox(*resized_box_coords)
+    def __delitem__(self, annotation: AnnotationABC):
+        del self.__collection[annotation.category]
 
-        elif isinstance(annotation, SegmentationAnnotation):
-            annotation.mask = cv2.resize(
-                annotation.mask,
-                (new_w, new_h),
-                interpolation=cv2.INTER_AREA,
-            )
-    return resized_image, annotations
+    def __iter__(self):
+        return iter(self.__collection)
+
+    def __len__(self):
+        return len(self.__collection)
+
+    def __repr__(self):
+        return repr(self.__collection)

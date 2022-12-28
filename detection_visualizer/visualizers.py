@@ -1,20 +1,12 @@
-from typing import Union
-
 import cv2
 import numpy as np
 
-from .datatypes import (
-    BoundingBox,
-    Color,
-    ObjectDetectionAnnotation,
-    SegmentationAnnotation,
-)
-from .utils import get_mask_bbox
+from .datatypes import BoxCoordinates, Color
 
 
 def visualize_bounding_box(
     image: np.ndarray,
-    bounding_box: BoundingBox,
+    bounding_box: BoxCoordinates,
     label: str,
     color: Color,
     alpha: float,
@@ -23,7 +15,7 @@ def visualize_bounding_box(
     image_height, image_width = image.shape[:2]
     diagonal = (image_height**2 + image_width**2) ** 0.5
     bbox_thickness = int(3e-3 * diagonal)
-    result = image
+    result = image.copy()
     xmin, ymin, xmax, ymax = bounding_box
 
     # Draw Box
@@ -87,63 +79,6 @@ def visualize_mask(
     color: Color,
     alpha: float,
 ) -> np.ndarray:
-    color = np.array(color).reshape(1, 1, 3)
-    return np.where(mask[..., None], alpha * color + (1 - alpha) * image, image).astype(
-        image.dtype
-    )
-
-
-def visualize_object_detection_annotation(
-    image: np.ndarray,
-    annotation: ObjectDetectionAnnotation,
-    color: Color,
-    alpha: float,
-):
-    result = visualize_bounding_box(
-        image,
-        annotation.bounding_box,
-        annotation.label,
-        color,
-        alpha,
-    )
-    return result
-
-
-def visualize_segmentation_annotation(
-    image: np.ndarray,
-    annotation: SegmentationAnnotation,
-    color: Color,
-    alpha: float,
-):
-    result = visualize_mask(image, annotation.mask, color, alpha)
-    box_label = annotation.label
-    bbox = get_mask_bbox(annotation.mask)
-    result = visualize_bounding_box(
-        result,
-        bbox,
-        box_label,
-        color,
-        alpha,
-    )
-    return result
-
-
-VISUALIZATION_FUNCTIONS = {
-    ObjectDetectionAnnotation: visualize_object_detection_annotation,
-    SegmentationAnnotation: visualize_segmentation_annotation,
-}
-
-
-def visualize_annotation(
-    image: np.ndarray,
-    annotation: Union[ObjectDetectionAnnotation, SegmentationAnnotation],
-    color: Color,
-    alpha: float,
-):
-    visualization_function = VISUALIZATION_FUNCTIONS[type(annotation)]
-    return visualization_function(
-        image,
-        annotation,
-        color,
-        alpha,
-    )
+    pixel = np.array(color).reshape(1, 1, 3)
+    colored_image = alpha * pixel + (1 - alpha) * image
+    return np.where(mask[..., None], colored_image, image).astype(image.dtype)

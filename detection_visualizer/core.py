@@ -11,11 +11,11 @@ class Visualizer:
     def __init__(
         self,
         alpha: float = 0.7,
-        transfrom: Optional[TransformABC] = None,
+        transform: Optional[TransformABC] = None,
         color_mapper: ColorMapper = AutoColorMapper(),
     ):
         self.alpha = alpha
-        self.transfrom = transfrom
+        self.transform = transform
         self.color_mapper = color_mapper
 
     def __call__(
@@ -23,8 +23,8 @@ class Visualizer:
         image: np.ndarray,
         annotations: Sequence[AnnotationABC],
     ):
-        if self.transfrom is not None:
-            image, annotations = self.transfrom(image, annotations)
+        if self.transform is not None:
+            image, annotations = self.transform(image, annotations)
         for annotation in annotations:
             color = self.color_mapper[annotation]
             image = annotation.visualize(image, color, self.alpha)

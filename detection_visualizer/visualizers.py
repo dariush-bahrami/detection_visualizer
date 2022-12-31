@@ -13,10 +13,11 @@ def visualize_bounding_box(
 ) -> np.ndarray:
     font: int = cv2.FONT_HERSHEY_DUPLEX
     image_height, image_width = image.shape[:2]
-    diagonal = (image_height**2 + image_width**2) ** 0.5
-    bbox_thickness = int(3e-3 * diagonal)
+    img_diagonal = (image_height**2 + image_width**2) ** 0.5
     result = image.copy()
     xmin, ymin, xmax, ymax = bounding_box
+    box_diagonal = ((ymax - ymin) ** 2 + (xmax - xmin) ** 2) ** 0.5
+    bbox_thickness = round((box_diagonal / img_diagonal) * img_diagonal**0.25)
 
     # Draw Box
     box_color = color
@@ -27,9 +28,9 @@ def visualize_bounding_box(
 
     text = label
 
-    font_thickness = int(2e-3 * diagonal)
     # Estimate initial font scale
-    font_scale = (xmax - xmin) / image_height
+    font_scale = 1
+    font_thickness = 0
     # Calculate text sizes
     text_width, text_height = cv2.getTextSize(
         text,
@@ -51,8 +52,8 @@ def visualize_bounding_box(
         result,
         (xmin + bbox_thickness, ymin + bbox_thickness),
         (
-            xmin + text_width + bbox_thickness * 4,
-            ymin + text_height + bbox_thickness * 4,
+            xmin + bbox_thickness * 4 + text_width,
+            ymin + bbox_thickness * 4 + text_height,
         ),
         [0, 0, 0],
         -1,
@@ -62,7 +63,7 @@ def visualize_bounding_box(
     cv2.putText(
         result,
         text,
-        (xmin + bbox_thickness * 2, ymin + bbox_thickness * 2 + text_height),
+        (xmin + bbox_thickness, ymin + bbox_thickness * 2 + text_height),
         font,
         font_scale,
         box_color,
